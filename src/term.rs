@@ -16,6 +16,158 @@ use std::time::Duration;
 use crate::app_state::AppState;
 use crate::verify::VerifyOutcome;
 
+// ============================================================================
+// Startup checklist types and rendering
+// ============================================================================
+
+/// Status of a startup check item
+#[derive(Debug, Clone)]
+pub enum StartupCheckStatus {
+    Pending,
+    Running { frame: usize },
+    Passed { details: String },
+    Warn { details: String },
+    Failed { error: String, help: Vec<String> },
+}
+
+/// A single item in the startup checklist
+#[derive(Debug, Clone)]
+pub struct StartupCheckItem {
+    pub label: String,
+    pub status: StartupCheckStatus,
+}
+
+/// RAII guard to ensure cursor is shown even on early exit
+pub struct CursorGuard {
+    _private: (),
+}
+
+impl CursorGuard {
+    pub fn new() -> Result<Self> {
+        let mut stdout = io::stdout();
+        execute!(stdout, Hide)?;
+        Ok(Self { _private: () })
+    }
+}
+
+impl Drop for CursorGuard {
+    fn drop(&mut self) {
+        let mut stdout = io::stdout();
+        let _ = execute!(stdout, Show);
+    }
+}
+
+/// Spinner animation frames
+const SPINNER_FRAMES: [&str; 4] = ["◐", "◓", "◑", "◒"];
+
+fn spinner_frame(i: usize) -> &'static str {
+    SPINNER_FRAMES[i % SPINNER_FRAMES.len()]
+}
+
+/// Render the startup checklist
+pub fn render_startup_checklist(
+    title: &str,
+    items: &[StartupCheckItem],
+    footer: Option<&str>,
+) -> Result<()> {
+    // Clear screen without entering raw mode
+    let mut stdout = io::stdout();
+    execute!(stdout, Clear(ClearType::All), MoveTo(0, 0))?;
+
+    // Title
+    execute!(
+        stdout,
+        SetForegroundColor(Color::Cyan),
+        Print(format!("🎯 {}\n\n", title)),
+        ResetColor
+    )?;
+
+    // Render each item
+    for item in items {
+        match &item.status {
+            StartupCheckStatus::Pending => {
+                execute!(
+                    stdout,
+                    SetForegroundColor(Color::DarkGrey),
+                    Print(format!("  •  {}\n", item.label)),
+                    ResetColor
+                )?;
+            }
+            StartupCheckStatus::Running { frame } => {
+                execute!(
+                    stdout,
+                    SetForegroundColor(Color::Yellow),
+                    Print(format!("  {}  {}", spinner_frame(*frame), item.label)),
+                    ResetColor,
+                    Print("\n")
+                )?;
+            }
+            StartupCheckStatus::Passed { details } => {
+                execute!(
+                    stdout,
+                    SetForegroundColor(Color::Green),
+                    Print("  ✓  "),
+                    ResetColor,
+                    Print(&item.label),
+                    SetForegroundColor(Color::DarkGrey),
+                    Print(format!(" — {}", details)),
+                    ResetColor,
+                    Print("\n")
+                )?;
+            }
+            StartupCheckStatus::Warn { details } => {
+                execute!(
+                    stdout,
+                    SetForegroundColor(Color::Yellow),
+                    Print("  !  "),
+                    ResetColor,
+                    Print(&item.label),
+                    SetForegroundColor(Color::Yellow),
+                    Print(format!(" — {}", details)),
+                    ResetColor,
+                    Print("\n")
+                )?;
+            }
+            StartupCheckStatus::Failed { error, help } => {
+                execute!(
+                    stdout,
+                    SetForegroundColor(Color::Red),
+                    Print("  ✗  "),
+                    ResetColor,
+                    Print(&item.label),
+                    SetForegroundColor(Color::Red),
+                    Print(format!(" — {}", error)),
+                    ResetColor,
+                    Print("\n")
+                )?;
+                // Print help lines
+                for help_line in help {
+                    execute!(
+                        stdout,
+                        SetForegroundColor(Color::DarkGrey),
+                        Print(format!("       {}\n", help_line)),
+                        ResetColor
+                    )?;
+                }
+            }
+        }
+    }
+
+    // Footer
+    if let Some(footer_text) = footer {
+        execute!(
+            stdout,
+            Print("\n"),
+            SetForegroundColor(Color::DarkGrey),
+            Print(format!("{}\n", footer_text)),
+            ResetColor
+        )?;
+    }
+
+    stdout.flush()?;
+    Ok(())
+}
+
 /// Terminal wrapper that manages raw mode lifecycle
 pub struct Terminal {
     _private: (),
@@ -50,6 +202,7 @@ pub enum Action {
     List,
     Rerun,
     Solution,
+    Open,
     Continue,
     None,
 }
@@ -78,6 +231,7 @@ fn key_to_action(key: KeyEvent) -> Action {
         KeyCode::Char('l') => Action::List,
         KeyCode::Char('r') => Action::Rerun,
         KeyCode::Char('s') => Action::Solution,
+        KeyCode::Char('o') => Action::Open,
         KeyCode::Enter | KeyCode::Esc => Action::Continue,
         _ => Action::None,
     }
@@ -218,6 +372,8 @@ pub fn render_main(state: &AppState, output_buffer: &[String]) -> Result<()> {
     write!(stdout, " run  ")?;
     print_colored("s", Color::DarkGrey)?;
     write!(stdout, " solution  ")?;
+    print_colored("o", Color::DarkGrey)?;
+    write!(stdout, " open  ")?;
     print_colored("q", Color::DarkGrey)?;
     writeln!(stdout, " quit\r")?;
 

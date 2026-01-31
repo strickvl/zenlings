@@ -18,8 +18,8 @@ use std::thread;
 use std::time::Duration;
 
 use app_state::AppState;
-use term::Action;
-use verify::{OutputLine, VerifyOptions, VerifyResult};
+use term::{Action, CursorGuard, StartupCheckItem, StartupCheckStatus};
+use verify::{OutputLine, PythonVersion, VerifyOptions, VerifyResult};
 use watch::{Debouncer, WatchEvent};
 
 /// Zenlings - Learn ZenML Dynamic Pipelines
@@ -89,10 +89,10 @@ fn main() -> Result<()> {
         state.set_current_by_name(name)?;
     }
 
-    // Set up verification options
+    // Set up verification options (with smart binary detection)
     let verify_opts = VerifyOptions {
-        python_bin: args.python.clone(),
-        zenml_bin: args.zenml.clone(),
+        python_bin: verify::find_python_binary(&pack_root, &args.python),
+        zenml_bin: verify::find_zenml_binary(&pack_root, &args.zenml),
         working_dir: pack_root.clone(),
     };
 
@@ -264,6 +264,34 @@ fn main() -> Result<()> {
                     }
                 }
 
+                Action::Open => {
+                    let exercise = state.current_exercise();
+                    let path = &exercise.path;
+                    
+                    // Use platform-appropriate open command
+                    #[cfg(target_os = "macos")]
+                    let result = std::process::Command::new("open").arg(path).spawn();
+                    
+                    #[cfg(target_os = "linux")]
+                    let result = std::process::Command::new("xdg-open").arg(path).spawn();
+                    
+                    #[cfg(target_os = "windows")]
+                    let result = std::process::Command::new("cmd")
+                        .args(["/C", "start", "", &path.to_string_lossy()])
+                        .spawn();
+                    
+                    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+                    let result: Result<std::process::Child, std::io::Error> = Err(std::io::Error::new(
+                        std::io::ErrorKind::Unsupported,
+                        "Platform not supported",
+                    ));
+
+                    if let Err(e) = result {
+                        term::render_modal("Open", &format!("Could not open file: {}", e))?;
+                        wait_for_continue()?;
+                    }
+                }
+
                 Action::Continue | Action::None => {}
             }
         }
@@ -276,34 +304,251 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Run startup checks
-fn run_startup_checks(pack_root: &PathBuf, args: &Args) -> Result<()> {
-    // Check if ZenML is initialized
-    if !verify::check_zenml_init(pack_root) {
-        eprintln!("\n❌ ZenML is not initialized in this directory.");
-        eprintln!("\nPlease run:");
-        eprintln!("  cd {}", pack_root.display());
-        eprintln!("  zenml init");
-        eprintln!("\nThen try again.");
-        bail!("ZenML not initialized");
-    }
+/// Outcome of a single startup check
+enum CheckOutcome {
+    Pass { details: String },
+    Warn { details: String },
+    Fail { error: String, help: Vec<String> },
+}
 
-    // Check orchestrator type
+/// Run a check with spinner animation
+fn run_check_with_spinner<F>(
+    items: &mut [StartupCheckItem],
+    idx: usize,
+    check_fn: F,
+) -> Result<CheckOutcome>
+where
+    F: FnOnce() -> Result<CheckOutcome> + Send + 'static,
+{
+    use std::sync::mpsc;
+
+    // Start the check in a background thread
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let result = check_fn();
+        let _ = tx.send(result);
+    });
+
+    // Animate spinner while waiting
+    let mut frame = 0usize;
+    loop {
+        items[idx].status = StartupCheckStatus::Running { frame };
+        term::render_startup_checklist("Zenlings - Startup Checks", items, None)?;
+
+        // Check if result is ready (non-blocking)
+        match rx.try_recv() {
+            Ok(result) => return result,
+            Err(mpsc::TryRecvError::Empty) => {
+                // Still running, continue animation
+                thread::sleep(Duration::from_millis(80));
+                frame = frame.wrapping_add(1);
+            }
+            Err(mpsc::TryRecvError::Disconnected) => {
+                // Thread panicked or dropped sender
+                return Ok(CheckOutcome::Fail {
+                    error: "Check crashed unexpectedly".to_string(),
+                    help: vec![],
+                });
+            }
+        }
+    }
+}
+
+/// Apply check outcome to the checklist item
+fn apply_outcome(items: &mut [StartupCheckItem], idx: usize, outcome: &CheckOutcome) {
+    items[idx].status = match outcome {
+        CheckOutcome::Pass { details } => StartupCheckStatus::Passed {
+            details: details.clone(),
+        },
+        CheckOutcome::Warn { details } => StartupCheckStatus::Warn {
+            details: details.clone(),
+        },
+        CheckOutcome::Fail { error, help } => StartupCheckStatus::Failed {
+            error: error.clone(),
+            help: help.clone(),
+        },
+    };
+}
+
+/// Run startup checks with visual feedback
+fn run_startup_checks(pack_root: &PathBuf, args: &Args) -> Result<()> {
+    // Hide cursor during checks (restored automatically on drop)
+    let _cursor = CursorGuard::new()?;
+
+    // Smart binary detection: prefer .venv binaries if they exist
+    let python_bin = verify::find_python_binary(pack_root, &args.python);
+    let zenml_bin = verify::find_zenml_binary(pack_root, &args.zenml);
+
+    // Build verification options
     let opts = VerifyOptions {
-        python_bin: args.python.clone(),
-        zenml_bin: args.zenml.clone(),
+        python_bin,
+        zenml_bin,
         working_dir: pack_root.clone(),
     };
 
-    if let Ok(Some(orchestrator)) = verify::get_orchestrator_type(&opts) {
-        if orchestrator != "local" {
-            eprintln!("\n⚠️  Note: You're using the '{}' orchestrator.", orchestrator);
-            eprintln!("   Zenlings works best with the 'local' orchestrator for fast feedback.");
-            eprintln!("   To switch: zenml stack set default");
-            eprintln!("");
-            // Don't fail, just warn
+    // Initialize checklist items
+    let mut items = vec![
+        StartupCheckItem {
+            label: "Python version".to_string(),
+            status: StartupCheckStatus::Pending,
+        },
+        StartupCheckItem {
+            label: "ZenML installed".to_string(),
+            status: StartupCheckStatus::Pending,
+        },
+        StartupCheckItem {
+            label: "ZenML initialized".to_string(),
+            status: StartupCheckStatus::Pending,
+        },
+        StartupCheckItem {
+            label: "Orchestrator".to_string(),
+            status: StartupCheckStatus::Pending,
+        },
+    ];
+
+    // Render initial state
+    term::render_startup_checklist("Zenlings - Startup Checks", &items, None)?;
+
+    // -------------------------------------------------------------------------
+    // Check 1: Python version >= 3.9
+    // -------------------------------------------------------------------------
+    let opts_clone = opts.clone();
+    let outcome = run_check_with_spinner(&mut items, 0, move || {
+        match verify::get_python_version(&opts_clone) {
+            Ok(version) => {
+                if version.meets_minimum() {
+                    Ok(CheckOutcome::Pass {
+                        details: format!("Python {}", version),
+                    })
+                } else {
+                    Ok(CheckOutcome::Fail {
+                        error: format!("Python {} (need >= {})", version, PythonVersion::MIN_REQUIRED),
+                        help: vec![
+                            "Install Python 3.9 or newer".to_string(),
+                            format!("Or use --python <path> to specify a different interpreter"),
+                        ],
+                    })
+                }
+            }
+            Err(e) => Ok(CheckOutcome::Fail {
+                error: format!("Could not detect Python: {}", e),
+                help: vec![
+                    "Ensure Python is installed and in your PATH".to_string(),
+                    "Or use --python <path> to specify the interpreter".to_string(),
+                ],
+            }),
         }
+    })?;
+
+    apply_outcome(&mut items, 0, &outcome);
+    term::render_startup_checklist("Zenlings - Startup Checks", &items, None)?;
+
+    if matches!(outcome, CheckOutcome::Fail { .. }) {
+        thread::sleep(Duration::from_millis(100)); // Brief pause to show final state
+        bail!("Python check failed");
     }
+
+    // -------------------------------------------------------------------------
+    // Check 2: ZenML installed
+    // -------------------------------------------------------------------------
+    let opts_clone = opts.clone();
+    let outcome = run_check_with_spinner(&mut items, 1, move || {
+        let probe = verify::probe_zenml(&opts_clone);
+
+        if !probe.python_import_ok {
+            return Ok(CheckOutcome::Fail {
+                error: "ZenML not found in Python environment".to_string(),
+                help: vec![
+                    "Install with: pip install \"zenml[local]\"".to_string(),
+                    format!("Make sure to install in the same environment as --python"),
+                ],
+            });
+        }
+
+        if !probe.zenml_cli_ok {
+            return Ok(CheckOutcome::Fail {
+                error: "ZenML CLI not accessible".to_string(),
+                help: vec![
+                    "Ensure 'zenml' command is in your PATH".to_string(),
+                    "Or use --zenml <path> to specify the CLI location".to_string(),
+                ],
+            });
+        }
+
+        // Both OK - show versions
+        let version_info = match (&probe.zenml_version, &probe.zenml_cli_version) {
+            (Some(py_ver), Some(_cli_ver)) => format!("v{}", py_ver),
+            (Some(py_ver), None) => format!("v{}", py_ver),
+            (None, Some(cli_ver)) => format!("CLI v{}", cli_ver),
+            (None, None) => "installed".to_string(),
+        };
+
+        Ok(CheckOutcome::Pass { details: version_info })
+    })?;
+
+    apply_outcome(&mut items, 1, &outcome);
+    term::render_startup_checklist("Zenlings - Startup Checks", &items, None)?;
+
+    if matches!(outcome, CheckOutcome::Fail { .. }) {
+        thread::sleep(Duration::from_millis(100));
+        bail!("ZenML installation check failed");
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 3: ZenML initialized (.zen directory)
+    // -------------------------------------------------------------------------
+    let pack_root_clone = pack_root.clone();
+    let outcome = run_check_with_spinner(&mut items, 2, move || {
+        if verify::check_zenml_init(&pack_root_clone) {
+            Ok(CheckOutcome::Pass {
+                details: ".zen directory found".to_string(),
+            })
+        } else {
+            Ok(CheckOutcome::Fail {
+                error: "ZenML not initialized".to_string(),
+                help: vec![
+                    format!("cd {}", pack_root_clone.display()),
+                    "zenml init".to_string(),
+                ],
+            })
+        }
+    })?;
+
+    apply_outcome(&mut items, 2, &outcome);
+    term::render_startup_checklist("Zenlings - Startup Checks", &items, None)?;
+
+    if matches!(outcome, CheckOutcome::Fail { .. }) {
+        thread::sleep(Duration::from_millis(100));
+        bail!("ZenML not initialized");
+    }
+
+    // -------------------------------------------------------------------------
+    // Check 4: Orchestrator is 'local' (warn only, don't fail)
+    // -------------------------------------------------------------------------
+    let opts_clone = opts.clone();
+    let outcome = run_check_with_spinner(&mut items, 3, move || {
+        use verify::OrchestratorCheckResult;
+        match verify::get_orchestrator_type(&opts_clone) {
+            OrchestratorCheckResult::Found(flavor) if flavor == "local" => Ok(CheckOutcome::Pass {
+                details: "local".to_string(),
+            }),
+            OrchestratorCheckResult::Found(flavor) => Ok(CheckOutcome::Warn {
+                details: format!("'{}' (recommend 'local' for fast feedback)", flavor),
+            }),
+            OrchestratorCheckResult::NotFound => Ok(CheckOutcome::Warn {
+                details: "no active orchestrator found".to_string(),
+            }),
+            OrchestratorCheckResult::CommandFailed(err) => Ok(CheckOutcome::Warn {
+                details: err,
+            }),
+        }
+    })?;
+
+    apply_outcome(&mut items, 3, &outcome);
+    term::render_startup_checklist("Zenlings - Startup Checks", &items, Some("All checks passed! Starting Zenlings..."))?;
+
+    // Brief pause so user can see the final checklist before TUI clears it
+    thread::sleep(Duration::from_millis(800));
 
     Ok(())
 }
