@@ -1,0 +1,75 @@
+name: Test Solutions
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZENML_ANALYTICS_OPT_IN: 'false'
+  ZENML_DEBUG: 'true'
+  ZENML_ENABLE_RICH_TRACEBACK: 'false'
+  AUTO_OPEN_DASHBOARD: 'false'
+  PYTHONIOENCODING: 'utf-8'
+  UV_HTTP_TIMEOUT: '600'
+
+jobs:
+  test-solutions:
+    name: Test Solution Pipelines
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
+      - name: Create virtual environment
+        run: uv venv
+
+      - name: Install Zenlings with test dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip install -e ".[test]"
+
+      - name: Initialize ZenML
+        run: |
+          source .venv/bin/activate
+          zenml init
+
+      - name: Run solution tests (parallel)
+        run: |
+          source .venv/bin/activate
+          pytest tests/ \
+            -n auto \
+            --dist loadfile \
+            -v \
+            --tb=short
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zenlings-test-logs
+          path: .zen/
+          retention-days: 7

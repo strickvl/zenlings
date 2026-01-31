@@ -1,0 +1,506 @@
+format_version = 1
+
+welcome_message = """
+Welcome to Zenlings! 🎉
+
+This tool will teach you ZenML's dynamic pipelines through hands-on exercises.
+Dynamic pipelines let you use Python control flow (loops, conditionals) to
+decide what steps to run at runtime.
+
+Prerequisites:
+- Basic ZenML knowledge (steps, pipelines, artifacts)
+- ZenML installed and configured (zenml init)
+- Python 3.9+
+
+How it works:
+1. Open the exercise file shown under the progress bar
+2. Fix the code according to the TODO comments
+3. Save the file - Zenlings will automatically check your solution
+4. Press 'h' for a hint if you're stuck
+5. Press 'n' to move to the next exercise when done
+
+Let's get started!
+"""
+
+final_message = """
+Congratulations! 🎊
+
+You've completed all the Zenlings exercises! You now understand:
+✅ Loading artifacts with .load()
+✅ Mapping over collections with .map()
+✅ Cartesian products with .product()
+✅ Broadcasting with unmapped()
+✅ Async execution with .submit()
+✅ Manual chunking and unpacking
+✅ Runtime configuration
+
+Next steps:
+- Build your own dynamic pipelines
+- Explore the ZenML docs for more advanced features
+- Share your feedback at github.com/zenml-io/zenlings
+
+Happy pipeline building! 🚀
+"""
+
+# =============================================================================
+# MODULE 0: INTRODUCTION
+# =============================================================================
+
+[[exercises]]
+name = "intro1"
+dir = "00_intro"
+pipeline_name = "hello_pipeline"
+hint = """
+This exercise should just work! Run it to see a basic pipeline in action.
+Press 'n' to continue to the next exercise.
+"""
+
+[[exercises]]
+name = "intro2"
+dir = "00_intro"
+pipeline_name = "my_first_dynamic_pipeline"
+hint = """
+Look at the @pipeline decorator. What parameter enables dynamic mode?
+
+Add `dynamic=True` to the @pipeline decorator:
+    @pipeline(dynamic=True)
+    def my_first_dynamic_pipeline():
+        ...
+
+Check the ZenML docs if needed: https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines
+"""
+
+# =============================================================================
+# MODULE 1: LOADING ARTIFACTS
+# =============================================================================
+
+[[exercises]]
+name = "load1"
+dir = "01_loading"
+pipeline_name = "load1_pipeline"
+hint = """
+In dynamic pipelines, step outputs are artifact references, not actual data.
+
+To get the actual data (an integer in this case), call .load() on the artifact:
+    count_value = count.load()
+
+Then use count_value in your range():
+    for i in range(count_value):
+        process_item(i)
+"""
+
+[[exercises]]
+name = "load2"
+dir = "01_loading"
+pipeline_name = "load2_pipeline"
+hint = """
+You need to:
+1. Call get_items() to get the artifact
+2. Load the artifact to get the actual list: items_data = items.load()
+3. Use a for loop to call process_item for each item:
+   for item in items_data:
+       process_item(item)
+
+Remember: The step call goes INSIDE the loop.
+"""
+
+[[exercises]]
+name = "load3"
+dir = "01_loading"
+pipeline_name = "load3_pipeline"
+hint = """
+Boolean artifacts work the same as integer artifacts - you need to load them first.
+
+Pattern:
+    is_valid = check_data_valid()
+    is_valid_value = is_valid.load()
+
+    if is_valid_value:
+        process_data()
+    else:
+        cleanup_invalid_data()
+"""
+
+[[exercises]]
+name = "load4"
+dir = "01_loading"
+pipeline_name = "load4_pipeline"
+hint = """
+This is a common bug: loading the artifact multiple times inside a loop.
+
+The fix is to load ONCE before the loop:
+    numbers_data = numbers.load()
+
+    for n in numbers_data:
+        square(n)
+
+Don't load inside the loop condition or body!
+"""
+
+# =============================================================================
+# MODULE 2: THE MAP PATTERN
+# =============================================================================
+
+[[exercises]]
+name = "map1"
+dir = "02_map"
+pipeline_name = "map1_pipeline"
+hint = """
+The .map() method is called on the STEP, not on the data:
+
+    results = double.map(x=numbers)
+
+NOT:
+    results = numbers.map(double)  # Wrong!
+
+The parameter name (x) must match the step's parameter.
+"""
+
+[[exercises]]
+name = "map2"
+dir = "02_map"
+pipeline_name = "map2_pipeline"
+hint = """
+The result of .map() is a MapResultsFuture, not raw data.
+
+To get all the results as a list, call .load() on it:
+    results = triple.map(x=numbers)
+    results_data = results.load()  # Now it's a list like [3, 6, 9, 12, 15]
+    total = sum(results_data)
+"""
+
+[[exercises]]
+name = "map3"
+dir = "02_map"
+pipeline_name = "map3_pipeline"
+hint = """
+You can pass a MapResultsFuture directly to a downstream step that expects
+a list! ZenML will automatically wait for all mapped steps to complete
+and collect their outputs.
+
+    lengths = get_length.map(word=words)
+    find_longest(lengths)  # No .load() needed - ZenML handles it!
+"""
+
+[[exercises]]
+name = "map4"
+dir = "02_map"
+pipeline_name = "map4_pipeline"
+hint = """
+When mapping with multiple inputs, they must have the same length.
+The i-th call receives the i-th element from each input.
+
+    names = get_names()  # ["Alice", "Bob", "Charlie"]
+    ages = get_ages()    # [25, 30, 35]
+
+    greetings = create_greeting.map(name=names, age=ages)
+    # Creates: ("Alice", 25), ("Bob", 30), ("Charlie", 35)
+"""
+
+[[exercises]]
+name = "map5"
+dir = "02_map"
+pipeline_name = "map5_pipeline"
+hint = """
+The bug is a length mismatch: products has 3 items but prices has 4!
+
+When using .map() with multiple inputs, they must have the SAME length.
+
+Fix get_prices() to return only 3 prices:
+    return [9.99, 19.99, 29.99]
+"""
+
+# =============================================================================
+# MODULE 3: THE PRODUCT PATTERN
+# =============================================================================
+
+[[exercises]]
+name = "product1"
+dir = "03_product"
+pipeline_name = "product1_pipeline"
+hint = """
+.product() creates a cartesian product - every combination of inputs.
+
+Change .map() to .product():
+    variants = create_variant.product(color=colors, size=sizes)
+
+With 3 colors × 2 sizes, you get 6 variants!
+"""
+
+[[exercises]]
+name = "product2"
+dir = "03_product"
+pipeline_name = "product2_pipeline"
+hint = """
+For hyperparameter search:
+1. Implement get_learning_rates() to return [0.001, 0.01, 0.1]
+2. Implement get_batch_sizes() to return [16, 32]
+3. Use train_model.product(lr=learning_rates, batch_size=batch_sizes)
+4. Pass the results to find_best()
+
+This creates 3 × 2 = 6 training experiments!
+"""
+
+[[exercises]]
+name = "product3"
+dir = "03_product"
+pipeline_name = "product3_pipeline"
+hint = """
+Chain .map() and .product():
+
+1. First preprocess each dataset with .map():
+   preprocessed_datasets = preprocess.map(dataset=raw_datasets)
+
+2. Then product with models:
+   accuracies = train.product(model_type=model_types, dataset=preprocessed_datasets)
+
+This creates 2 preprocessing steps, then 3 × 2 = 6 training runs.
+"""
+
+# =============================================================================
+# MODULE 4: ADVANCED MAPPING
+# =============================================================================
+
+[[exercises]]
+name = "advanced1"
+dir = "04_advanced"
+pipeline_name = "advanced1_pipeline"
+hint = """
+Use unmapped() to broadcast an input to ALL mapped calls:
+
+    from zenml.execution.pipeline.dynamic.utils import unmapped
+
+    results = process_with_config.map(
+        item=items,
+        config=unmapped(config)  # Same config passed to ALL calls
+    )
+
+Each call receives one item but the FULL config.
+"""
+
+[[exercises]]
+name = "advanced2"
+dir = "04_advanced"
+pipeline_name = "advanced2_pipeline"
+hint = """
+Use .chunk(index) for selective processing:
+
+    numbers = get_numbers()
+    numbers_data = numbers.load()  # Load to examine values
+
+    count = 0
+    for i, n in enumerate(numbers_data):
+        if n > 5:
+            chunk = numbers.chunk(i)  # Get artifact reference
+            process_large(chunk)       # Pass to step
+            count += 1
+
+    report(count)
+"""
+
+[[exercises]]
+name = "advanced3"
+dir = "04_advanced"
+pipeline_name = "advanced3_pipeline"
+hint = """
+.unpack() splits multi-output map results into separate lists:
+
+    results = split_name.map(full_name=full_names)
+    first_names, last_names = results.unpack()
+
+    # first_names = list of all first tuple elements
+    # last_names = list of all second tuple elements
+
+    process_first_names(first_names)
+    process_last_names(last_names)
+"""
+
+[[exercises]]
+name = "advanced4"
+dir = "04_advanced"
+pipeline_name = "advanced4_pipeline"
+hint = """
+This combines multiple patterns:
+
+1. Check and load the enabled flag:
+   is_enabled_value = check_enabled().load()
+
+2. If enabled:
+   - Get items and configs
+   - preprocessed = preprocess.map(item=items)
+   - results = process_with_config.product(item=preprocessed, config=configs)
+   - aggregate_results(results)
+
+3. If not enabled:
+   - run_fallback()
+"""
+
+# =============================================================================
+# MODULE 5: ASYNC EXECUTION
+# =============================================================================
+
+[[exercises]]
+name = "async1"
+dir = "05_async"
+pipeline_name = "async1_pipeline"
+hint = """
+Use .submit() for parallel execution:
+
+    future_a = slow_step_a.submit()  # Starts immediately
+    future_b = slow_step_b.submit()  # Also starts immediately (parallel!)
+
+    # Pass futures to downstream step - ZenML waits automatically
+    combine_results(future_a, future_b)
+
+Without .submit(), steps run sequentially (slow).
+With .submit(), they run in parallel (fast)!
+"""
+
+[[exercises]]
+name = "async2"
+dir = "05_async"
+pipeline_name = "async2_pipeline"
+hint = """
+.result() returns the OutputArtifact (metadata + reference)
+.load() returns the actual data
+
+    future = compute_value.submit()
+
+    artifact = future.result()  # OutputArtifact object
+    value = future.load()       # The actual integer (42)
+
+    # Can also pass future directly to steps
+    double_value(future)
+"""
+
+[[exercises]]
+name = "async3"
+dir = "05_async"
+pipeline_name = "async3_pipeline"
+hint = """
+Use after=[] to create explicit dependencies:
+
+    db_future = setup_database.submit()
+    cache_future = setup_cache.submit()
+
+    # Main waits for BOTH setups
+    main_future = run_main_process.submit(after=[db_future, cache_future])
+
+    # Cleanup waits for main
+    cleanup.submit(after=[main_future])
+"""
+
+[[exercises]]
+name = "async4"
+dir = "05_async"
+pipeline_name = "async4_pipeline"
+hint = """
+Fan-out/fan-in pattern:
+
+    urls_data = urls.load()
+
+    # Fan-out: Submit parallel fetches
+    futures = []
+    for url in urls_data:
+        future = fetch_url.submit(url=url)
+        futures.append(future)
+
+    # Fan-in: Collect results
+    responses = [f.load() for f in futures]
+    aggregate_responses(responses)
+"""
+
+# =============================================================================
+# MODULE 6: CONFIGURATION
+# =============================================================================
+
+[[exercises]]
+name = "config1"
+dir = "06_config"
+pipeline_name = "config1_pipeline"
+hint = """
+Use step.with_options() to configure steps dynamically:
+
+    # Normal call
+    process_data(data, "cached")
+
+    # With caching disabled
+    process_data.with_options(enable_cache=False)(data, "fresh")
+
+    # With custom metadata
+    process_data.with_options(extra={"priority": "high"})(data, "priority")
+"""
+
+[[exercises]]
+name = "config2"
+dir = "06_config"
+pipeline_name = "config2_pipeline"
+hint = """
+Add runtime mode to each step:
+
+    @step(runtime="inline")   # For quick routing/decision steps
+    def decide_processing_mode(...): ...
+
+    @step(runtime="inline")   # For loading small configs
+    def load_config(...): ...
+
+    @step(runtime="isolated") # For heavy computation
+    def heavy_processing(...): ...
+
+inline = fast, runs in orchestrator
+isolated = slower, but can be distributed
+"""
+
+# =============================================================================
+# MODULE 7: QUIZZES & CAPSTONE
+# =============================================================================
+
+[[exercises]]
+name = "quiz1"
+dir = "07_quizzes"
+pipeline_name = "quiz1_pipeline"
+hint = """
+This quiz combines loading, conditionals, and mapping:
+
+1. Get items and threshold:
+   items = get_items()
+   should_process = check_threshold()
+
+2. Load the boolean:
+   should_process_value = should_process.load()
+
+3. Branch:
+   if should_process_value:
+       results = process_item.map(x=items)
+       results_data = results.load()
+       verify(True, results_data)
+   else:
+       fallback()
+       verify(False)
+"""
+
+[[exercises]]
+name = "capstone"
+dir = "07_quizzes"
+pipeline_name = "capstone_pipeline"
+hint = """
+Build a complete hyperparameter search pipeline:
+
+1. Implement get_learning_rates() -> return [0.001, 0.01, 0.1]
+2. Implement get_batch_sizes() -> return [16, 32]
+
+3. In the pipeline:
+   learning_rates = get_learning_rates()
+   batch_sizes = get_batch_sizes()
+
+   accuracies = train_model.product(lr=learning_rates, batch_size=batch_sizes)
+
+   accuracies_data = accuracies.load()
+   lr_data = learning_rates.load()
+   bs_data = batch_sizes.load()
+
+   result = find_best(accuracies_data, lr_data, bs_data)
+   verify_capstone(result)
+
+Good luck! 🚀
+"""

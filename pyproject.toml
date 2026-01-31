@@ -1,0 +1,28 @@
+[project]
+name = "zenlings"
+version = "0.1.0"
+description = "Interactive exercises for learning ZenML dynamic pipelines"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+
+dependencies = [
+    "zenml[local]",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-xdist>=3.0",
+    "pytest-timeout>=2.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --timeout=300"
+# 5 minute timeout per test - pipelines can be slow
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
