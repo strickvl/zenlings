@@ -22,7 +22,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from conftest import run_python_file
+from tests.helpers import run_python_file
 
 
 # Paths relative to this test file
