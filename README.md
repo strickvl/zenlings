@@ -4,6 +4,8 @@
 
 Inspired by [rustlings](https://github.com/rust-lang/rustlings), Zenlings guides you through ZenML's powerful dynamic pipeline features — `.load()`, `.map()`, `.product()`, async execution, and more — with exercises that build on each other.
 
+<img width="648" height="389" alt="CleanShot 2026-02-01 at 02 35 28" src="https://github.com/user-attachments/assets/e3d585b2-5b56-4aa7-a6e3-8d4edcc8ca8d" />
+
 ## Quick Start
 
 ### Install Zenlings
