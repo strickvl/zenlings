@@ -23,13 +23,13 @@ TASK: Complete the pipeline to run the same step with different configs:
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_data() -> list[int]:
     """Get data to process."""
     return [1, 2, 3, 4, 5]
 
 
-@step
+@step(enable_cache=False)
 def process_data(data: list[int], mode: str) -> int:
     """Process data and return sum."""
     total = sum(data)

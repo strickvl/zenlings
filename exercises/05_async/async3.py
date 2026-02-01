@@ -19,28 +19,28 @@ TASK: Complete the pipeline where:
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def setup_database() -> str:
     """Set up the database (simulated)."""
     print("Setting up database...")
     return "database_ready"
 
 
-@step
+@step(enable_cache=False)
 def setup_cache() -> str:
     """Set up the cache (simulated)."""
     print("Setting up cache...")
     return "cache_ready"
 
 
-@step
+@step(enable_cache=False)
 def run_main_process() -> str:
     """Run the main process (needs both setups complete)."""
     print("Running main process...")
     return "process_complete"
 
 
-@step
+@step(enable_cache=False)
 def cleanup() -> None:
     """Clean up after main process."""
     print("Cleaning up...")

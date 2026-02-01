@@ -8,19 +8,19 @@ Preprocess with map, then train all combinations with product.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_raw_datasets() -> list[str]:
     """Get raw dataset names."""
     return ["sales_2023", "sales_2024"]
 
 
-@step
+@step(enable_cache=False)
 def get_model_types() -> list[str]:
     """Get model types to train."""
     return ["linear", "tree", "neural"]
 
 
-@step
+@step(enable_cache=False)
 def preprocess(dataset: str) -> str:
     """Preprocess a raw dataset."""
     processed = f"processed_{dataset}"
@@ -28,7 +28,7 @@ def preprocess(dataset: str) -> str:
     return processed
 
 
-@step
+@step(enable_cache=False)
 def train(model_type: str, dataset: str) -> float:
     """Train a model on a dataset."""
     import hashlib
@@ -38,7 +38,7 @@ def train(model_type: str, dataset: str) -> float:
     return accuracy
 
 
-@step
+@step(enable_cache=False)
 def report_results(accuracies: list[float]) -> None:
     """Report training results."""
     print(f"\n=== Training Complete ===")

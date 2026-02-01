@@ -21,25 +21,25 @@ from zenml import pipeline, step
 from zenml.execution.pipeline.dynamic.utils import unmapped
 
 
-@step
+@step(enable_cache=False)
 def check_enabled() -> bool:
     """Check if processing is enabled."""
     return True  # Processing is enabled
 
 
-@step
+@step(enable_cache=False)
 def get_data_items() -> list[str]:
     """Get raw data items."""
     return ["item_a", "item_b", "item_c"]
 
 
-@step
+@step(enable_cache=False)
 def get_processing_configs() -> list[str]:
     """Get different processing configurations."""
     return ["config_fast", "config_thorough"]
 
 
-@step
+@step(enable_cache=False)
 def preprocess(item: str) -> str:
     """Preprocess a data item."""
     result = f"preprocessed_{item}"
@@ -47,7 +47,7 @@ def preprocess(item: str) -> str:
     return result
 
 
-@step
+@step(enable_cache=False)
 def process_with_config(item: str, config: str) -> str:
     """Process an item with a specific config."""
     result = f"{item}+{config}"
@@ -55,7 +55,7 @@ def process_with_config(item: str, config: str) -> str:
     return result
 
 
-@step
+@step(enable_cache=False)
 def aggregate_results(results: list[str]) -> None:
     """Aggregate all results."""
     print(f"\n=== Aggregated {len(results)} results ===")
@@ -63,7 +63,7 @@ def aggregate_results(results: list[str]) -> None:
         print(f"  - {r}")
 
 
-@step
+@step(enable_cache=False)
 def run_fallback() -> None:
     """Simple fallback when processing is disabled."""
     print("Processing disabled - running fallback")

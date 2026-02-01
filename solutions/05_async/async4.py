@@ -8,7 +8,7 @@ Launch many tasks, wait for all, then aggregate.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_urls() -> list[str]:
     """Get URLs to fetch."""
     return [
@@ -19,7 +19,7 @@ def get_urls() -> list[str]:
     ]
 
 
-@step
+@step(enable_cache=False)
 def fetch_url(url: str) -> dict:
     """Fetch data from a URL (simulated)."""
     import hashlib
@@ -32,7 +32,7 @@ def fetch_url(url: str) -> dict:
     return fake_data
 
 
-@step
+@step(enable_cache=False)
 def aggregate_responses(responses: list[dict]) -> None:
     """Aggregate all fetched responses."""
     print(f"\n=== Aggregated {len(responses)} responses ===")

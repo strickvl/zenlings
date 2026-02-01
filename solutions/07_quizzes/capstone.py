@@ -9,21 +9,21 @@ from typing import Any
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_learning_rates() -> list[float]:
     """Get learning rates to try."""
     # SOLUTION: Return 3 learning rates
     return [0.001, 0.01, 0.1]
 
 
-@step
+@step(enable_cache=False)
 def get_batch_sizes() -> list[int]:
     """Get batch sizes to try."""
     # SOLUTION: Return 2 batch sizes
     return [16, 32]
 
 
-@step
+@step(enable_cache=False)
 def train_model(lr: float, batch_size: int) -> float:
     """Simulate training a model with given hyperparameters."""
     import random
@@ -39,7 +39,7 @@ def train_model(lr: float, batch_size: int) -> float:
     return round(accuracy, 4)
 
 
-@step
+@step(enable_cache=False)
 def find_best(accuracies: list[float], learning_rates: list[float], batch_sizes: list[int]) -> dict[str, Any]:
     """Find the best hyperparameter combination."""
     configs = [(lr, bs) for lr in learning_rates for bs in batch_sizes]
@@ -63,7 +63,7 @@ def find_best(accuracies: list[float], learning_rates: list[float], batch_sizes:
     return result
 
 
-@step
+@step(enable_cache=False)
 def verify_capstone(result: dict[str, Any]) -> None:
     """Verify the capstone was completed correctly."""
     assert result["total_experiments"] >= 6, "Need at least 3 LRs × 2 batch sizes = 6 experiments"

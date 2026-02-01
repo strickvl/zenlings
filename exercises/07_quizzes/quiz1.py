@@ -18,20 +18,20 @@ IMPLEMENT the pipeline body below. The steps are provided.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_items() -> list[int]:
     """Returns items to process."""
     return [10, 20, 30, 40, 50]
 
 
-@step
+@step(enable_cache=False)
 def check_threshold() -> bool:
     """Check if we have enough items (threshold: 3)."""
     # In real life, this might check database row count, file size, etc.
     return True  # We do have enough items
 
 
-@step
+@step(enable_cache=False)
 def process_item(x: int) -> int:
     """Process a single item."""
     result = x * 2
@@ -39,7 +39,7 @@ def process_item(x: int) -> int:
     return result
 
 
-@step
+@step(enable_cache=False)
 def fallback() -> str:
     """Fallback when not enough data."""
     message = "Not enough data - running fallback logic"
@@ -47,7 +47,7 @@ def fallback() -> str:
     return message
 
 
-@step
+@step(enable_cache=False)
 def verify(condition_was_true: bool, expected_results: list[int] | None = None) -> None:
     """Verification step - DO NOT MODIFY."""
     if condition_was_true:

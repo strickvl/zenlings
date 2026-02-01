@@ -8,19 +8,19 @@ Use .product() instead of .map() to create all combinations.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_colors() -> list[str]:
     """Get available colors."""
     return ["red", "blue", "green"]
 
 
-@step
+@step(enable_cache=False)
 def get_sizes() -> list[str]:
     """Get available sizes."""
     return ["S", "M"]
 
 
-@step
+@step(enable_cache=False)
 def create_variant(color: str, size: str) -> str:
     """Create a product variant."""
     variant = f"{color}-{size}"
@@ -28,7 +28,7 @@ def create_variant(color: str, size: str) -> str:
     return variant
 
 
-@step
+@step(enable_cache=False)
 def count_variants(variants: list[str]) -> None:
     """Count total variants."""
     print(f"\nTotal variants created: {len(variants)}")

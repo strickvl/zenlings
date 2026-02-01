@@ -9,19 +9,19 @@ from zenml import pipeline, step
 from zenml.execution.pipeline.dynamic.utils import unmapped
 
 
-@step
+@step(enable_cache=False)
 def get_items() -> list[int]:
     """Get items to process."""
     return [1, 2, 3, 4, 5]
 
 
-@step
+@step(enable_cache=False)
 def get_config() -> dict:
     """Get shared configuration."""
     return {"multiplier": 10, "prefix": "Result"}
 
 
-@step
+@step(enable_cache=False)
 def process_with_config(item: int, config: dict) -> str:
     """Process an item using the shared config."""
     result = item * config["multiplier"]
@@ -30,7 +30,7 @@ def process_with_config(item: int, config: dict) -> str:
     return output
 
 
-@step
+@step(enable_cache=False)
 def show_results(results: list[str]) -> None:
     """Show all results."""
     print("\n=== All Results ===")

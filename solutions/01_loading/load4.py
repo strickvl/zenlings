@@ -9,14 +9,14 @@ artifact tracking in production scenarios.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_numbers() -> list[int]:
     """Returns a list of numbers."""
     print("Fetching numbers from data source...")
     return [1, 2, 3, 4, 5]
 
 
-@step
+@step(enable_cache=False)
 def square(n: int) -> int:
     """Square a number."""
     result = n * n

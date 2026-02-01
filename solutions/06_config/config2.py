@@ -9,7 +9,7 @@ from zenml import pipeline, step
 
 
 # SOLUTION: Inline for quick routing decisions
-@step(runtime="inline")
+@step(runtime="inline", enable_cache=False)
 def decide_processing_mode(data_size: int) -> str:
     """Decide how to process based on data size."""
     if data_size > 1000:
@@ -18,14 +18,14 @@ def decide_processing_mode(data_size: int) -> str:
 
 
 # SOLUTION: Inline for loading small configs
-@step(runtime="inline")
+@step(runtime="inline", enable_cache=False)
 def load_config() -> dict:
     """Load processing configuration."""
     return {"threshold": 0.5, "max_items": 100}
 
 
 # SOLUTION: Isolated for heavy computation
-@step(runtime="isolated")
+@step(runtime="isolated", enable_cache=False)
 def heavy_processing(data: list[int], config: dict) -> float:
     """Heavy computation that benefits from isolation."""
     import time
@@ -36,7 +36,7 @@ def heavy_processing(data: list[int], config: dict) -> float:
 
 
 # SOLUTION: Could be inline or isolated depending on actual workload
-@step(runtime="isolated")
+@step(runtime="isolated", enable_cache=False)
 def light_processing(data: list[int], config: dict) -> float:
     """Light computation."""
     result = sum(data) / len(data) if data else 0
@@ -44,7 +44,7 @@ def light_processing(data: list[int], config: dict) -> float:
     return result
 
 
-@step
+@step(enable_cache=False)
 def get_sample_data() -> list[int]:
     """Get sample data."""
     return list(range(100))

@@ -23,13 +23,13 @@ TASK: Complete the pipeline to:
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_full_names() -> list[str]:
     """Get a list of full names."""
     return ["Alice Smith", "Bob Jones", "Carol White"]
 
 
-@step
+@step(enable_cache=False)
 def split_name(full_name: str) -> tuple[str, str]:
     """Split a full name into first and last."""
     parts = full_name.split()
@@ -39,13 +39,13 @@ def split_name(full_name: str) -> tuple[str, str]:
     return first, last
 
 
-@step
+@step(enable_cache=False)
 def process_first_names(names: list[str]) -> None:
     """Process all first names."""
     print(f"\nFirst names: {names}")
 
 
-@step
+@step(enable_cache=False)
 def process_last_names(names: list[str]) -> None:
     """Process all last names."""
     print(f"Last names: {names}")

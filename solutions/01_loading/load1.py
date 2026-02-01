@@ -7,13 +7,13 @@ The fix is to call .load() on the artifact to get the actual integer value.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_count() -> int:
     """Returns the number of items to process."""
     return 5
 
 
-@step
+@step(enable_cache=False)
 def process_item(index: int) -> str:
     """Process a single item by index."""
     result = f"Processed item {index}"

@@ -15,20 +15,20 @@ HINT: Look carefully at the lengths of the two lists being mapped.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_products() -> list[str]:
     """Get product names."""
     return ["Widget", "Gadget", "Gizmo"]
 
 
-@step
+@step(enable_cache=False)
 def get_prices() -> list[float]:
     """Get product prices."""
     # BUG: This list has a different length than products!
     return [9.99, 19.99, 29.99, 39.99]
 
 
-@step
+@step(enable_cache=False)
 def create_listing(product: str, price: float) -> str:
     """Create a product listing."""
     listing = f"{product}: ${price:.2f}"
@@ -36,7 +36,7 @@ def create_listing(product: str, price: float) -> str:
     return listing
 
 
-@step
+@step(enable_cache=False)
 def show_catalog(listings: list[str]) -> None:
     """Display the product catalog."""
     print("\n=== Product Catalog ===")

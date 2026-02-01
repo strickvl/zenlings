@@ -8,13 +8,13 @@ Syntax: step.map(parameter_name=artifact)
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def create_numbers() -> list[int]:
     """Create a list of numbers to process."""
     return [1, 2, 3, 4, 5]
 
 
-@step
+@step(enable_cache=False)
 def double(x: int) -> int:
     """Double a number."""
     result = x * 2

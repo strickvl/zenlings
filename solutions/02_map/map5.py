@@ -8,20 +8,20 @@ When using .map() with multiple inputs, they must have the same length.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_products() -> list[str]:
     """Get product names."""
     return ["Widget", "Gadget", "Gizmo"]
 
 
-@step
+@step(enable_cache=False)
 def get_prices() -> list[float]:
     """Get product prices."""
     # SOLUTION: Match the length to products (3 items)
     return [9.99, 19.99, 29.99]
 
 
-@step
+@step(enable_cache=False)
 def create_listing(product: str, price: float) -> str:
     """Create a product listing."""
     listing = f"{product}: ${price:.2f}"
@@ -29,7 +29,7 @@ def create_listing(product: str, price: float) -> str:
     return listing
 
 
-@step
+@step(enable_cache=False)
 def show_catalog(listings: list[str]) -> None:
     """Display the product catalog."""
     print("\n=== Product Catalog ===")

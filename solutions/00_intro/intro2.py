@@ -7,13 +7,13 @@ The fix is to add dynamic=True to the @pipeline decorator.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_items() -> list[str]:
     """Returns a list of items to process."""
     return ["apple", "banana", "cherry"]
 
 
-@step
+@step(enable_cache=False)
 def process_item(item: str) -> str:
     """Process a single item."""
     result = f"Processed: {item.upper()}"

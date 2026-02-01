@@ -8,13 +8,13 @@ This gives you artifact references for specific elements.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_numbers() -> list[int]:
     """Get a list of numbers."""
     return [2, 8, 3, 12, 1, 9, 4, 15]
 
 
-@step
+@step(enable_cache=False)
 def process_large(n: int) -> int:
     """Process a large number (> 5)."""
     result = n * 100
@@ -22,7 +22,7 @@ def process_large(n: int) -> int:
     return result
 
 
-@step
+@step(enable_cache=False)
 def report(count: int) -> None:
     """Report how many large numbers were found."""
     print(f"\nProcessed {count} large numbers (> 5)")

@@ -8,19 +8,19 @@ The i-th call gets the i-th element from each input.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_names() -> list[str]:
     """Get a list of names."""
     return ["Alice", "Bob", "Charlie"]
 
 
-@step
+@step(enable_cache=False)
 def get_ages() -> list[int]:
     """Get a list of ages."""
     return [25, 30, 35]
 
 
-@step
+@step(enable_cache=False)
 def create_greeting(name: str, age: int) -> str:
     """Create a personalized greeting."""
     greeting = f"Hello {name}, you are {age} years old!"
@@ -28,7 +28,7 @@ def create_greeting(name: str, age: int) -> str:
     return greeting
 
 
-@step
+@step(enable_cache=False)
 def print_all_greetings(greetings: list[str]) -> None:
     """Print all greetings."""
     print("\n--- All Greetings ---")

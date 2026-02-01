@@ -30,7 +30,7 @@ from typing import Any
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_learning_rates() -> list[float]:
     """Get learning rates to try."""
     # TODO: Return a list of at least 3 learning rates
@@ -38,7 +38,7 @@ def get_learning_rates() -> list[float]:
     pass
 
 
-@step
+@step(enable_cache=False)
 def get_batch_sizes() -> list[int]:
     """Get batch sizes to try."""
     # TODO: Return a list of at least 2 batch sizes
@@ -46,7 +46,7 @@ def get_batch_sizes() -> list[int]:
     pass
 
 
-@step
+@step(enable_cache=False)
 def train_model(lr: float, batch_size: int) -> float:
     """
     Simulate training a model with given hyperparameters.
@@ -67,7 +67,7 @@ def train_model(lr: float, batch_size: int) -> float:
     return round(accuracy, 4)
 
 
-@step
+@step(enable_cache=False)
 def find_best(accuracies: list[float], learning_rates: list[float], batch_sizes: list[int]) -> dict[str, Any]:
     """Find the best hyperparameter combination."""
     # Create all combinations (same order as .product())
@@ -92,7 +92,7 @@ def find_best(accuracies: list[float], learning_rates: list[float], batch_sizes:
     return result
 
 
-@step
+@step(enable_cache=False)
 def verify_capstone(result: dict[str, Any]) -> None:
     """Verify the capstone was completed correctly."""
     assert result["total_experiments"] >= 6, "Need at least 3 LRs × 2 batch sizes = 6 experiments"

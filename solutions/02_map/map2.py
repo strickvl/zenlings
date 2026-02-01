@@ -7,13 +7,13 @@ MapResultsFuture.load() returns a list of all the mapped step outputs.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def create_numbers() -> list[int]:
     """Create a list of numbers."""
     return [1, 2, 3, 4, 5]
 
 
-@step
+@step(enable_cache=False)
 def triple(x: int) -> int:
     """Triple a number."""
     result = x * 3
@@ -21,7 +21,7 @@ def triple(x: int) -> int:
     return result
 
 
-@step
+@step(enable_cache=False)
 def print_sum(total: int) -> None:
     """Print the sum."""
     print(f"Sum of all tripled numbers: {total}")

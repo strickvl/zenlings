@@ -13,7 +13,7 @@ NOTE: This is a STATIC pipeline (not dynamic yet). We'll make it dynamic soon!
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def greet() -> str:
     """A simple greeting step."""
     message = "Hello from ZenML! 👋"
@@ -21,7 +21,7 @@ def greet() -> str:
     return message
 
 
-@step
+@step(enable_cache=False)
 def celebrate() -> None:
     """Celebrate completing the first exercise!"""
     print("🎉 Congratulations! Your first ZenML pipeline ran successfully!")

@@ -8,19 +8,19 @@ Each axis of your search space becomes an input to .product().
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_learning_rates() -> list[float]:
     """Define learning rates to try."""
     return [0.001, 0.01, 0.1]
 
 
-@step
+@step(enable_cache=False)
 def get_batch_sizes() -> list[int]:
     """Define batch sizes to try."""
     return [16, 32]
 
 
-@step
+@step(enable_cache=False)
 def train_model(lr: float, batch_size: int) -> float:
     """
     Simulate training a model.
@@ -38,7 +38,7 @@ def train_model(lr: float, batch_size: int) -> float:
     return round(accuracy, 4)
 
 
-@step
+@step(enable_cache=False)
 def find_best(accuracies: list[float]) -> None:
     """Find and print the best accuracy."""
     best = max(accuracies)

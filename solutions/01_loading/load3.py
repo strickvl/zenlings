@@ -7,14 +7,14 @@ Conditional execution uses loaded boolean values in Python if statements.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def check_data_valid() -> bool:
     """Check if the data passes validation."""
     print("Checking data validity...")
     return True
 
 
-@step
+@step(enable_cache=False)
 def process_data() -> str:
     """Process the valid data."""
     result = "Data processed successfully!"
@@ -22,7 +22,7 @@ def process_data() -> str:
     return result
 
 
-@step
+@step(enable_cache=False)
 def cleanup_invalid_data() -> str:
     """Handle invalid data."""
     result = "Cleaned up invalid data"

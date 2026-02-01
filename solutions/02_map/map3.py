@@ -8,13 +8,13 @@ ZenML automatically waits for completion and collects outputs.
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_words() -> list[str]:
     """Get a list of words."""
     return ["apple", "banana", "cherry", "date", "elderberry"]
 
 
-@step
+@step(enable_cache=False)
 def get_length(word: str) -> int:
     """Get the length of a word."""
     length = len(word)
@@ -22,7 +22,7 @@ def get_length(word: str) -> int:
     return length
 
 
-@step
+@step(enable_cache=False)
 def find_longest(lengths: list[int]) -> int:
     """Find the longest length."""
     longest = max(lengths)

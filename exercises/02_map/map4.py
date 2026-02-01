@@ -20,21 +20,21 @@ TASK: Build a pipeline from scratch that:
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def get_names() -> list[str]:
     """Get a list of names."""
     # TODO: Return a list of 3 names
     pass
 
 
-@step
+@step(enable_cache=False)
 def get_ages() -> list[int]:
     """Get a list of ages."""
     # TODO: Return a list of 3 ages (same length as names!)
     pass
 
 
-@step
+@step(enable_cache=False)
 def create_greeting(name: str, age: int) -> str:
     """Create a personalized greeting."""
     greeting = f"Hello {name}, you are {age} years old!"
@@ -42,7 +42,7 @@ def create_greeting(name: str, age: int) -> str:
     return greeting
 
 
-@step
+@step(enable_cache=False)
 def print_all_greetings(greetings: list[str]) -> None:
     """Print all greetings."""
     print("\n--- All Greetings ---")

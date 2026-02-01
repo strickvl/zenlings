@@ -8,7 +8,7 @@ Async Execution - Exercise 2: Solution
 from zenml import pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def compute_value() -> int:
     """Compute a value."""
     value = 42
@@ -16,7 +16,7 @@ def compute_value() -> int:
     return value
 
 
-@step
+@step(enable_cache=False)
 def double_value(x: int) -> int:
     """Double a value."""
     result = x * 2

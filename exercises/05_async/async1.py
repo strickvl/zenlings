@@ -22,7 +22,7 @@ from zenml import pipeline, step
 import time
 
 
-@step
+@step(enable_cache=False)
 def slow_step_a() -> str:
     """A slow step that takes time."""
     print("Step A starting...")
@@ -31,7 +31,7 @@ def slow_step_a() -> str:
     return "Result A"
 
 
-@step
+@step(enable_cache=False)
 def slow_step_b() -> str:
     """Another slow step that takes time."""
     print("Step B starting...")
@@ -40,7 +40,7 @@ def slow_step_b() -> str:
     return "Result B"
 
 
-@step
+@step(enable_cache=False)
 def combine_results(a: str, b: str) -> str:
     """Combine results from both steps."""
     result = f"Combined: {a} + {b}"
