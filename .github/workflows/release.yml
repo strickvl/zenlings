@@ -30,7 +30,7 @@ jobs:
       matrix:
         include:
           - name: macOS Intel
-            runs_on: macos-13
+            runs_on: macos-15-intel
             target: x86_64-apple-darwin
             asset: zenlings-x86_64-apple-darwin
 
