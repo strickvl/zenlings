@@ -20,7 +20,7 @@ use std::time::Duration;
 use app_state::AppState;
 use term::{Action, CursorGuard, StartupCheckItem, StartupCheckStatus};
 use verify::{OutputLine, PythonVersion, VerifyOptions, VerifyResult};
-use watch::{Debouncer, WatchEvent};
+use watch::WatchEvent;
 
 /// Zenlings - Learn ZenML Dynamic Pipelines
 #[derive(Parser, Debug)]
@@ -131,9 +131,6 @@ fn main() -> Result<()> {
     let mut output_buffer: Vec<String> = Vec::new();
 
     // Main event loop
-    let mut debouncer = Debouncer::new(300);
-    let mut pending_verify = false;
-
     loop {
         // Render current state
         if state.all_completed() {
@@ -177,26 +174,8 @@ fn main() -> Result<()> {
             }
         }
 
-        // Check for file changes (non-blocking)
-        while let Ok(event) = watch_rx.try_recv() {
-            if let WatchEvent::FileChanged(path) = event {
-                // Only trigger if the changed file is the current exercise
-                if path == state.current_exercise().path {
-                    debouncer.should_process();
-                    pending_verify = true;
-                }
-            }
-        }
-
-        // Trigger verification after debounce
-        if pending_verify && debouncer.ready_to_trigger() && !state.verifying {
-            state.verifying = true;
-            state.last_verify = None;
-            output_buffer.clear();
-            verify_tx.send(VerifyRequest::Run(state.current_exercise().clone()))?;
-            pending_verify = false;
-            debouncer.reset();
-        }
+        // Drain file watcher events (we don't auto-run, but need to keep channel clear)
+        while watch_rx.try_recv().is_ok() {}
 
         // Poll for keyboard input
         if let Some(action) = term::poll_key(Duration::from_millis(50))? {
