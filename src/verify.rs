@@ -254,10 +254,11 @@ fn run_zenml_status_check(
 fn parse_zenml_status(json_str: &str) -> Option<String> {
     let value: serde_json::Value = serde_json::from_str(json_str).ok()?;
 
+    // Status is directly on the item (not nested in "body")
+    // JSON structure: { "items": [{ "status": "completed", ... }] }
     value
         .get("items")?
         .get(0)?
-        .get("body")?
         .get("status")?
         .as_str()
         .map(|s| s.to_string())
@@ -540,7 +541,8 @@ mod tests {
 
     #[test]
     fn test_parse_zenml_status() {
-        let json = r#"{"items":[{"body":{"status":"completed"}}]}"#;
+        // Status is directly on the item (not nested in "body")
+        let json = r#"{"items":[{"status":"completed"}]}"#;
         assert_eq!(parse_zenml_status(json), Some("completed".to_string()));
 
         let json_empty = r#"{"items":[]}"#;
