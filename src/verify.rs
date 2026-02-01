@@ -229,6 +229,8 @@ fn run_zenml_status_check(
             pipeline_name,
             "--size",
             "1",
+            "--sort_by",
+            "desc:created",
             "--output",
             "json",
         ])
