@@ -87,3 +87,31 @@ Tests use pytest-xdist with per-worker HOME and .zen directories to avoid SQLite
 00_intro → 01_loading → 02_map → 03_product → 04_advanced → 05_async → 06_config → 07_quizzes
 
 Teaching progression: `.load()` → `.map()` → `.product()` → unmapped/chunk/unpack → `.submit()` → runtime config
+
+## Distribution & Releases
+
+### Installation Methods
+
+1. **Quick install (recommended):** `curl -sSf https://raw.githubusercontent.com/strickvl/zenlings/main/install.sh | sh`
+2. **From source:** `cargo install zenlings`
+3. **Manual download:** Pre-built binaries on [GitHub Releases](https://github.com/strickvl/zenlings/releases)
+
+### Release Workflow
+
+Releases are automated via `.github/workflows/release.yml`:
+
+1. Tag a version: `git tag v0.1.0 && git push --tags`
+2. CI builds binaries for all platforms:
+   - `zenlings-x86_64-apple-darwin` (macOS Intel, macos-13 runner)
+   - `zenlings-aarch64-apple-darwin` (macOS Apple Silicon, macos-14 runner)
+   - `zenlings-x86_64-unknown-linux-gnu` (Linux, ubuntu-20.04 for glibc compatibility)
+   - `zenlings-x86_64-pc-windows-msvc.exe` (Windows)
+3. Creates GitHub Release with all binaries + SHA256 checksums
+
+### Install Script
+
+`install.sh` is a POSIX shell script that:
+- Detects OS (darwin/linux) and architecture (x86_64/aarch64)
+- Downloads the correct binary from GitHub Releases
+- Installs to `~/.local/bin` (configurable via `ZENLINGS_INSTALL_DIR`)
+- Supports specific versions via `ZENLINGS_VERSION=v0.1.0`

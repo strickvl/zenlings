@@ -4,16 +4,26 @@
 
 Inspired by [rustlings](https://github.com/rust-lang/rustlings), Zenlings guides you through ZenML's powerful dynamic pipeline features — `.load()`, `.map()`, `.product()`, async execution, and more — with exercises that build on each other.
 
-## Prerequisites
-
-- Python 3.9+
-- [Rust toolchain](https://rustup.rs/) (for building Zenlings)
-- A ZenML account (free at [cloud.zenml.io](https://cloud.zenml.io))
-
 ## Quick Start
 
+### Install Zenlings
+
+**macOS / Linux:**
 ```bash
-# Clone and enter the repo
+curl -sSf https://raw.githubusercontent.com/strickvl/zenlings/main/install.sh | sh
+```
+
+**Windows:** Download [zenlings-x86_64-pc-windows-msvc.exe](https://github.com/strickvl/zenlings/releases/latest) from releases.
+
+**From source** (requires Rust):
+```bash
+cargo install zenlings
+```
+
+### Get Started
+
+```bash
+# Clone the exercises
 git clone https://github.com/strickvl/zenlings.git
 cd zenlings
 
@@ -25,10 +35,14 @@ uv pip install -e .
 zenml init
 zenml login
 
-# Build and run Zenlings
-cargo build --release
-./target/release/zenlings
+# Start learning!
+zenlings
 ```
+
+## Prerequisites
+
+- Python 3.9+
+- A ZenML account (free at [cloud.zenml.io](https://cloud.zenml.io))
 
 ## How It Works
 

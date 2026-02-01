@@ -5,7 +5,7 @@ edition = "2021"
 description = "Interactive exercises for learning ZenML dynamic pipelines"
 authors = ["ZenML GmbH <info@zenml.io>"]
 license = "Apache-2.0"
-repository = "https://github.com/zenml-io/zenlings"
+repository = "https://github.com/strickvl/zenlings"
 keywords = ["zenml", "mlops", "learning", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 

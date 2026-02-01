@@ -1,0 +1,153 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g., v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Intel
+            runs_on: macos-13
+            target: x86_64-apple-darwin
+            asset: zenlings-x86_64-apple-darwin
+
+          - name: macOS Apple Silicon
+            runs_on: macos-14
+            target: aarch64-apple-darwin
+            asset: zenlings-aarch64-apple-darwin
+
+          - name: Linux x86_64
+            runs_on: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            asset: zenlings-x86_64-unknown-linux-gnu
+
+          - name: Windows x86_64
+            runs_on: windows-2022
+            target: x86_64-pc-windows-msvc
+            asset: zenlings-x86_64-pc-windows-msvc.exe
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Prepare artifact (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/zenlings dist/${{ matrix.asset }}
+          chmod +x dist/${{ matrix.asset }}
+          cd dist
+          shasum -a 256 ${{ matrix.asset }} > ${{ matrix.asset }}.sha256
+
+      - name: Prepare artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target/${{ matrix.target }}/release/zenlings.exe" "dist/${{ matrix.asset }}"
+          $hash = (Get-FileHash "dist/${{ matrix.asset }}" -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ matrix.asset }}" | Out-File -FilePath "dist/${{ matrix.asset }}.sha256" -Encoding utf8 -NoNewline
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la dist/
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Zenlings ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: dist/*
+          fail_on_unmatched_files: true
+          body: |
+            ## Installation
+
+            ### Quick Install (macOS/Linux)
+            ```bash
+            curl -sSf https://raw.githubusercontent.com/strickvl/zenlings/main/install.sh | sh
+            ```
+
+            ### Manual Download
+            Download the appropriate binary for your platform below.
+
+            | Platform | Binary |
+            |----------|--------|
+            | macOS Intel | `zenlings-x86_64-apple-darwin` |
+            | macOS Apple Silicon | `zenlings-aarch64-apple-darwin` |
+            | Linux x86_64 | `zenlings-x86_64-unknown-linux-gnu` |
+            | Windows x86_64 | `zenlings-x86_64-pc-windows-msvc.exe` |
+
+            ### Build from Source
+            ```bash
+            cargo install zenlings
+            ```
+
+            ## Checksums
+            SHA256 checksums are provided for each binary (`.sha256` files).
