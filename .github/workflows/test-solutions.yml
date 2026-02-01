@@ -17,7 +17,8 @@ concurrency:
 
 env:
   ZENML_ANALYTICS_OPT_IN: 'false'
-  ZENML_DEBUG: 'true'
+  ZENML_LOGGING_VERBOSITY: 'INFO'
+  ZENML_DEBUG: 'false'
   ZENML_ENABLE_RICH_TRACEBACK: 'false'
   AUTO_OPEN_DASHBOARD: 'false'
   PYTHONIOENCODING: 'utf-8'

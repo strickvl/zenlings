@@ -23,6 +23,7 @@ def _base_zenml_env(home: Path) -> Dict[str, str]:
         "HOME": str(home),
         # Disable analytics and interactive features
         "ZENML_ANALYTICS_OPT_IN": "false",
+        "ZENML_LOGGING_VERBOSITY": "INFO",
         "AUTO_OPEN_DASHBOARD": "false",
         "ZENML_ENABLE_RICH_TRACEBACK": "false",
         # Encoding for consistent output
@@ -31,6 +32,11 @@ def _base_zenml_env(home: Path) -> Dict[str, str]:
         "PATH": os.environ.get("PATH", ""),
     })
     return env
+
+
+# Path to the zenlings repo root (parent of tests/)
+ZENLINGS_ROOT = Path(__file__).parent.parent
+SOLUTIONS_DIR = ZENLINGS_ROOT / "solutions"
 
 
 @pytest.fixture(scope="session")
@@ -69,14 +75,21 @@ def zenml_env(worker_home: Path) -> Dict[str, str]:
 
 @pytest.fixture(scope="session")
 def ensure_zenml_init(worker_repo_dir: Path, zenml_env: Dict[str, str]) -> Path:
-    """Initialize ZenML in the worker's repo directory.
+    """Initialize ZenML in the worker's repo directory and copy solutions.
 
     This runs once per worker at the start of the session.
+    Copies solutions into the temp repo so ZenML can resolve module sources.
     Returns the repo directory path.
     """
     zenml_path = shutil.which("zenml")
     if not zenml_path:
         pytest.fail("zenml CLI not found in PATH. Install with: pip install zenml[local]")
+
+    # Copy solutions directory into the temp repo
+    # ZenML requires pipeline files to be within its source root
+    dest_solutions = worker_repo_dir / "solutions"
+    if SOLUTIONS_DIR.exists():
+        shutil.copytree(SOLUTIONS_DIR, dest_solutions)
 
     # Run zenml init
     result = subprocess.run(

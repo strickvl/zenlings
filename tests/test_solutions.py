@@ -116,9 +116,13 @@ def test_solution_pipeline_runs(
         ensure_zenml_init: Fixture that ensures ZenML is initialized (returns repo dir)
         zenml_env: Environment variables for isolated execution
     """
+    # Use the copied solution path within the temp ZenML repo
+    # (solutions are copied there by ensure_zenml_init fixture)
+    copied_solution_path = ensure_zenml_init / "solutions" / exercise.dir / f"{exercise.name}.py"
+
     # Run the solution file
     result = run_python_file(
-        exercise.solution_path,
+        copied_solution_path,
         cwd=ensure_zenml_init,  # Run in the initialized ZenML repo
         env=zenml_env,
         timeout_s=300,  # 5 minute timeout per pipeline
